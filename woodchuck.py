@@ -2,6 +2,7 @@ import pygame
 import assets
 import objects
 import game_map
+import math
 
 
 class SelectionBox(object):
@@ -18,6 +19,17 @@ class SelectionBox(object):
     def resize(self, pos):
         self.x = pos[0] - self.start_pos[0]
         self.y = pos[1] - self.start_pos[1]
+
+        if pos[0] < 21:
+            self.x = 21 - self.start_pos[0]
+        elif pos[0] > 1900:
+            self.x = 1900 - self.start_pos[0]
+        if pos[1] < 63:
+            self.y = 63 - self.start_pos[1]
+        elif pos[1] > 856:
+            self.y = 856 - self.start_pos[1]
+
+
         new_box = pygame.Rect(self.start_pos[0], self.start_pos[1], self.x, self.y)
 
         return new_box
