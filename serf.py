@@ -16,3 +16,4 @@ class Serf(entity.Entity):
         self.change_x = 0
         self.change_y = 0
         self.target = None
+        self.name = "Serf"

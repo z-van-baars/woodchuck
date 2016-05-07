@@ -53,15 +53,20 @@ def main():
     current_map = 0
     maps[current_map].wood = 200
 
+    build_mode = False
+
     done = False
     selection_box = SelectionBox()
     selected = pygame.sprite.Group()
+
+    ui_elements = pygame.sprite.Group()
 
     while not done:
         pos = pygame.mouse.get_pos()
 
         mouse_coord_stamp = font.render(str(pos), False, assets.black)
         wood_count_stamp = font.render(str(maps[current_map].wood), False, assets.white)
+        build_mode_stamp = font.render("Build Mode", True, assets.black)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -73,12 +78,26 @@ def main():
                     if 1846 <= pos[0] <= 1899 and 9 <= pos[1] <= 47:
                         done = True
                     elif 20 <= pos[0] <= 1900 and 63 <= pos[1] <= 854:
+                        if not selection_box.draw_box and not build_mode:
+                            selection_box.draw_box = True
+                            selection_box.start_pos = pos
+                        if build_mode:
+                            for each in ui_elements:
+                                invalid = pygame.sprite.Group()
+                                invalid = each.valid_build_site()
+                            if not invalid:
+                                new_building = objects.LumberCamp(pos[0], pos[1], maps[current_map])
+                                new_building.image = new_building.built_image
+                                maps[current_map].buildings.add(new_building)
+                                pygame.mouse.set_pos([new_building.rect.x, new_building.rect.y])
+                                pygame.mouse.set_visible(1)
+                                build_mode = False
+                                ui_elements = pygame.sprite.Group()
                         # if something is selected
                         if len(selected) > 0:
                             selected = pygame.sprite.Group()
-                        if not selection_box.draw_box:
-                            selection_box.draw_box = True
-                            selection_box.start_pos = pos
+                            print("tried to deselect")
+
 
                 elif check_which_mouse_button[1]:
                     if len(selected) > 0:
@@ -89,18 +108,44 @@ def main():
                 if check_which_mouse_button[0]:
 
                     if selection_box.draw_box:
+                        box_image = selection_box.resize(pos)
+                        for unit in maps[current_map].units:
+                            if box_image.collidrect(unit):
+                                selected.append(unit)
+                        for building in maps[current_map].buildings:
+                            if len(selected) == 0:
+                                if box_image.colliderect(building):
+                                    selected.add(building)
                         selection_box.draw_box = False
                         selection_box.start_pos = (0, 0)
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_l:
-                    pass
+                    pygame.mouse.set_visible(0)
+                    build_mode = True
+                    building_cursor = objects.LumberCamp(pos[0], pos[1], maps[current_map])
+                    ui_elements.add(building_cursor)
 
         maps[current_map].update()
         screen.blit(maps[current_map].background_image, [20, 63])
         screen.blit(ui_pane, [0, 0])
         screen.blit(mouse_coord_stamp, [1700, 15])
         screen.blit(wood_count_stamp, [70, 17])
+        if len(selected) > 0:
+            for each in selected:
+                name = each.name
+            selected_stamp = font.render(name, True, assets.black)
+            screen.blit(selected_stamp, [200, 870])
+
+        if build_mode:
+            building_cursor.rect.x = pos[0]
+            building_cursor.rect.y = pos[1]
+            for each in ui_elements:
+                each.valid_build_site()
+            ui_elements.draw(screen)
+            screen.blit(build_mode_stamp, [200, 870])
+
+        maps[current_map].buildings.draw(screen)
 
         if selection_box.draw_box:
             box_image = selection_box.resize(pos)
