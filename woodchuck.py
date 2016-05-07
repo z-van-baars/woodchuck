@@ -4,39 +4,23 @@ import objects
 import game_map
 
 
-class SelectionBox(pygame.sprite.Sprite):
+class SelectionBox(object):
     def __init__(self):
         super().__init__()
         self.color = assets.white
-        self.image = pygame.Surface([1, 1])
-        self.rect = self.image.get_rect()
-        self.rect.x = 0
-        self.rect.y = 0
-        self.start_pos = None
+        self.start_pos = (0, 0)
         self.draw_box = False
+        self.x = 0
+        self.y = 0
+        self.end_pos = None
+        self.width = 1
 
     def resize(self, pos):
-        if pos[0] >= self.start_pos[0] and pos[1] >= self.start_pos[1]:
-            self.image = pygame.Surface([pos[0] - self.start_pos[0], pos[1] - self.start_pos[1]])
-            self.rect.x = self.start_pos[0]
-            self.rect.y = self.start_pos[1]
+        self.x = pos[0] - self.start_pos[0]
+        self.y = pos[1] - self.start_pos[1]
+        new_box = pygame.Rect(self.start_pos[0], self.start_pos[1], self.x, self.y)
 
-        elif pos[0] >= self.start_pos[0] and pos[1] < self.start_pos[1]:
-            self.image = pygame.Surface([pos[0] - self.start_pos[0], self.start_pos[1] - pos[1]])
-            self.rect.x = self.start_pos[0]
-            self.rect.y = pos[1]
-
-        elif pos[0] < self.start_pos[0] and pos[1] >= self.start_pos[1]:
-            self.image = pygame.Surface([self.start_pos[0] - pos[0], pos[1] - self.start_pos[1]])
-            self.rect.x = pos[0]
-            self.rect.y = self.start_pos[1]
-
-        elif pos[0] < self.start_pos[0] and pos[1] < self.start_pos[1]:
-            self.image = pygame.Surface([self.start_pos[0] - pos[0], self.start_pos[1] - pos[1]])
-            self.rect.x = pos[0]
-            self.rect.y = pos[1]
-
-        self.image.fill(assets.white)
+        return new_box
 
 
 def main():
@@ -44,7 +28,7 @@ def main():
     pygame.init()
     pygame.display.set_caption("Woodchuck")
     screen_width = 1920
-    screen_height = 1080  
+    screen_height = 1080
     screen = pygame.display.set_mode([screen_width, screen_height], pygame.FULLSCREEN)
     ui_pane = pygame.image.load("art/ui_pane.png").convert()
     ui_pane.set_colorkey(assets.key)
@@ -59,10 +43,7 @@ def main():
 
     done = False
     selection_box = SelectionBox()
-    ui_elements = pygame.sprite.Group()
-    ui_elements.add(selection_box)
     selected = pygame.sprite.Group()
-    action = None
 
     while not done:
         pos = pygame.mouse.get_pos()
@@ -83,27 +64,21 @@ def main():
                         # if something is selected
                         if len(selected) > 0:
                             selected = pygame.sprite.Group()
+                        if not selection_box.draw_box:
+                            selection_box.draw_box = True
+                            selection_box.start_pos = pos
 
-                        else:
-                            if not selection_box.draw_box:
-                                selection_box.draw_box = True
-                                selection_box.start_pos = pos
-                                selection_box.rect.x = pos[0]
-                                selection_box.rect.y = pos[1]
                 elif check_which_mouse_button[1]:
                     if len(selected) > 0:
                         for unit in selected:
                             unit.target = pos
 
-
             elif event.type == pygame.MOUSEBUTTONUP:
-                if selection_box.draw_box:
-                    selection_box.draw_box = False
-                    selection_box.start_pos = None
-                    selection_box.rect.x = 0
-                    selection_box.rect.y = 0
-                    selection_box.image = pygame.Surface([1, 1])
-                    selection_box.image.fill(assets.white)
+                if check_which_mouse_button[0]:
+
+                    if selection_box.draw_box:
+                        selection_box.draw_box = False
+                        selection_box.start_pos = (0, 0)
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_l:
@@ -114,9 +89,10 @@ def main():
         screen.blit(ui_pane, [0, 0])
         screen.blit(mouse_coord_stamp, [1700, 15])
         screen.blit(wood_count_stamp, [70, 17])
+
         if selection_box.draw_box:
-            selection_box.resize(pos)
-            ui_elements.draw(screen)
+            box_image = selection_box.resize(pos)
+            pygame.draw.rect(screen, assets.white, box_image, 1)
         pygame.display.flip()
         clock.tick(60)
         time += 1
