@@ -39,8 +39,12 @@ class LumberCamp(entity.Entity):
 
         return collisions
 
+    def event_processing(self, event):
+        pass
+
     def spawn_serf(self):
         new_serf = serf.Serf(self.rect.x + 60, self.rect.y + 60, self.current_map)
+        pass
 
     def build(self, pos):
         pygame.mouse.set_visible(0)

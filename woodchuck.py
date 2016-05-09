@@ -8,31 +8,124 @@ import math
 class SelectionBox(object):
     def __init__(self):
         super().__init__()
-        self.color = assets.white
         self.start_pos = (0, 0)
-        self.draw_box = False
+        self.box_active = False
         self.x = 0
         self.y = 0
         self.end_pos = None
         self.width = 1
+        self.box_image = pygame.Rect(self.start_pos[0], self.start_pos[1], self.x, self.y)
 
-    def resize(self, pos):
+    def resize(self, pos, screen_width, screen_height):
         self.x = pos[0] - self.start_pos[0]
         self.y = pos[1] - self.start_pos[1]
 
         if pos[0] < 21:
             self.x = 21 - self.start_pos[0]
-        elif pos[0] > 1900:
-            self.x = 1900 - self.start_pos[0]
+        elif pos[0] > screen_width - 20:
+            self.x = (screen_width - 20) - self.start_pos[0]
         if pos[1] < 63:
             self.y = 63 - self.start_pos[1]
-        elif pos[1] > 856:
-            self.y = 856 - self.start_pos[1]
-
+        elif pos[1] > screen_height - 224:
+            self.y = (screen_height - 224) - self.start_pos[1]
 
         new_box = pygame.Rect(self.start_pos[0], self.start_pos[1], self.x, self.y)
 
         return new_box
+
+    def draw_box(self, screen_width, screen_height, pos):
+        if 20 <= pos[0] <= (screen_width - 20) and 63 <= pos[1] <= (screen_height - 226):
+            if not self.box_active:
+                self.box_active = True
+                self.start_pos = pos
+            else:
+                self.box_image = self.resize(pos, screen_width, screen_height)
+
+    def close_box(self, current_map, pos):
+        selected = []
+        if self.box_active:
+            self.box_image = self.resize(pos)
+            for unit in current_map.units:
+                if self.box_image.collidrect(unit):
+                    selected.append(unit)
+            if len(selected) == 0:
+                for building in current_map.buildings:
+                    if self.box_image.colliderect(building):
+                        selected.append(building)
+            self.box_active = False
+            self.start_pos = (0, 0)
+        return selected
+
+
+def close_game_check(event, pos, screen_width, screen_height):
+    close_box_left_bound = screen_width - 74
+    close_box_right_bound = screen_width - 21
+    close_box_top_bound = 9
+    close_box_bottom_bound = 47
+    if event.type == pygame.MOUSEBUTTONDOWN:
+        if pygame.mouse.get_pressed(0):
+            if close_box_left_bound <= pos[0] <= close_box_right_bound and close_box_top_bound <= pos[1] <= close_box_bottom_bound:
+                pygame.QUIT()
+
+
+def none_selected(event, selection_box, current_map, pos, screen_dims):
+    selected = []
+    if event.type == pygame.MOUSEBUTTONDOWN:
+        check_which_mouse_button = pygame.mouse.get_pressed()
+        if check_which_mouse_button[0]:
+            close_game_check(event, pos, screen_dims[0], screen_dims[1])
+            selection_box.draw_box(screen_dims[0], screen_dims[1], pos)
+        elif check_which_mouse_button[1]:
+            # Right click processing, probably nothing with nothing selected
+            pass
+
+    elif event.type == pygame.MOUSEBUTTONUP:
+        check_which_mouse_button = pygame.mouse.get_pressed()
+        if check_which_mouse_button[0]:
+            selected = selection_box.close_box(current_map, selected)
+        elif check_which_mouse_button[1]:
+            # Right click release processing, probably nothing with nothing selected
+            pass
+
+    elif event.type == pygame.KEYDOWN:
+        # keypress processing
+        pass
+
+    elif event.type == pygame.KEYUP:
+        # key release processing
+        pass
+
+    return selected
+
+
+def units_selected(event, selection_box, selected, current_map, pos, screen_dims):
+    if event.type == pygame.MOUSEBUTTONDOWN:
+        check_which_mouse_button = pygame.mouse.get_pressed()
+        if check_which_mouse_button[0]:
+            close_game_check(event, pos, screen_dims[0], screen_dims[1])
+            selection_box.draw_box(screen_dims[0], screen_dims[1], pos)
+
+        elif check_which_mouse_button[1]:
+            # Right click processing
+            pass
+
+    elif event.type == pygame.MOUSEBUTTONUP:
+        check_which_mouse_button = pygame.mouse.get_pressed()
+        if check_which_mouse_button[0]:
+            selected = selection_box.close_box(current_map, selected)
+        elif check_which_mouse_button[1]:
+            # Right click release processing
+            pass
+
+    elif event.type == pygame.KEYDOWN:
+        # keypress processing based on internal methods for unit selected
+        pass
+
+    elif event.type == pygame.KEYUP:
+        # key release processing based on internal methods for unit selected
+        pass
+
+    return selected
 
 
 def main():
@@ -57,7 +150,7 @@ def main():
 
     done = False
     selection_box = SelectionBox()
-    selected = pygame.sprite.Group()
+    selected = []
 
     ui_elements = pygame.sprite.Group()
 
@@ -67,64 +160,19 @@ def main():
         mouse_coord_stamp = font.render(str(pos), False, assets.black)
         wood_count_stamp = font.render(str(maps[current_map].wood), False, assets.white)
         build_mode_stamp = font.render("Build Mode", True, assets.black)
+        lumber_camp_stamp = font.render("Lumber Camp", True, assets.black)
+        serf_stamp = font.render("Serf", True, assets.black)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 done = True
 
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                check_which_mouse_button = pygame.mouse.get_pressed()
-                if check_which_mouse_button[0]:
-                    if 1846 <= pos[0] <= 1899 and 9 <= pos[1] <= 47:
-                        done = True
-                    elif 20 <= pos[0] <= 1900 and 63 <= pos[1] <= 854:
-                        if not selection_box.draw_box and not build_mode:
-                            selection_box.draw_box = True
-                            selection_box.start_pos = pos
-                        if build_mode:
-                            for each in ui_elements:
-                                invalid = pygame.sprite.Group()
-                                invalid = each.valid_build_site()
-                            if not invalid:
-                                new_building = objects.LumberCamp(pos[0], pos[1], maps[current_map])
-                                new_building.image = new_building.built_image
-                                maps[current_map].buildings.add(new_building)
-                                pygame.mouse.set_pos([new_building.rect.x, new_building.rect.y])
-                                pygame.mouse.set_visible(1)
-                                build_mode = False
-                                ui_elements = pygame.sprite.Group()
-                        # if something is selected
-                        if len(selected) > 0:
-                            selected = pygame.sprite.Group()
-                            print("tried to deselect")
+            if len(selected) == 0:
+                selected = none_selected(event, selection_box, maps[current_map], pos, (screen_width, screen_height))
 
+            else:
+                selected = units_selected(event, selection_box, selected, maps[current_map], pos, (screen_width, screen_height))
 
-                elif check_which_mouse_button[1]:
-                    if len(selected) > 0:
-                        for unit in selected:
-                            unit.target = pos
-
-            elif event.type == pygame.MOUSEBUTTONUP:
-                if check_which_mouse_button[0]:
-
-                    if selection_box.draw_box:
-                        box_image = selection_box.resize(pos)
-                        for unit in maps[current_map].units:
-                            if box_image.collidrect(unit):
-                                selected.append(unit)
-                        for building in maps[current_map].buildings:
-                            if len(selected) == 0:
-                                if box_image.colliderect(building):
-                                    selected.add(building)
-                        selection_box.draw_box = False
-                        selection_box.start_pos = (0, 0)
-
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_l:
-                    pygame.mouse.set_visible(0)
-                    build_mode = True
-                    building_cursor = objects.LumberCamp(pos[0], pos[1], maps[current_map])
-                    ui_elements.add(building_cursor)
 
         maps[current_map].update()
         screen.blit(maps[current_map].background_image, [20, 63])
@@ -147,8 +195,8 @@ def main():
 
         maps[current_map].buildings.draw(screen)
 
-        if selection_box.draw_box:
-            box_image = selection_box.resize(pos)
+        if selection_box.box_active:
+            box_image = selection_box.box_image
             pygame.draw.rect(screen, assets.white, box_image, 1)
         pygame.display.flip()
         clock.tick(60)
