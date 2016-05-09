@@ -1,7 +1,7 @@
 import pygame
 import assets
 import entity
-
+import serf
 
 lumber_camp_img = pygame.image.load("art/lumber_camp.png")
 lumber_camp_build_img = pygame.image.load("art/lumber_camp_build.png")

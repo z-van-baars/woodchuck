@@ -81,64 +81,6 @@ def build_mode(event, pos, screen, current_map, screen_width, screen_height, uni
     return unit
 
 
-def none_selected(event, selection_box, current_map, pos, screen_dims):
-    selected = []
-    if event.type == pygame.MOUSEBUTTONDOWN:
-        check_which_mouse_button = pygame.mouse.get_pressed()
-        if check_which_mouse_button[0]:
-            close_game_check(event, pos, screen_dims[0], screen_dims[1])
-            selection_box.draw_box(screen_dims[0], screen_dims[1], pos)
-        elif check_which_mouse_button[1]:
-            # Right click processing, probably nothing with nothing selected
-            pass
-
-    elif event.type == pygame.MOUSEBUTTONUP:
-        if selection_box.box_active:
-            selected = selection_box.close_box(current_map, pos, screen_dims)
-
-    elif event.type == pygame.KEYDOWN:
-        if build_mode:
-            unit_to_place = build_mode(pos, current_map, screen_dims[0], screen_dims[1], unit_to_place)
-
-        elif event.key == pygame.K_b:
-            build_mode = True
-
-    elif event.type == pygame.KEYUP:
-        # key release processing
-        pass
-    return selected
-
-
-def units_selected(event, selection_box, selected, current_map, pos, screen_dims):
-    if event.type == pygame.MOUSEBUTTONDOWN:
-        check_which_mouse_button = pygame.mouse.get_pressed()
-        if check_which_mouse_button[0]:
-            close_game_check(event, pos, screen_dims[0], screen_dims[1])
-            selection_box.draw_box(screen_dims[0], screen_dims[1], pos)
-
-        elif check_which_mouse_button[1]:
-            # Right click processing
-            pass
-
-    elif event.type == pygame.MOUSEBUTTONUP:
-        check_which_mouse_button = pygame.mouse.get_pressed()
-        if check_which_mouse_button[0]:
-            selected = selection_box.close_box(current_map, pos, screen_dims)
-        elif check_which_mouse_button[1]:
-            # Right click release processing
-            pass
-
-    elif event.type == pygame.KEYDOWN:
-        # keypress processing based on internal methods for unit selected
-        pass
-
-    elif event.type == pygame.KEYUP:
-        # key release processing based on internal methods for unit selected
-        pass
-
-    return selected
-
-
 def main():
     pygame.mixer.pre_init(44100, -16, 1, 512)
     pygame.init()
@@ -180,14 +122,30 @@ def main():
             if event.type == pygame.QUIT:
                 done = True
 
-            if len(selected) == 0:
-                selected = none_selected(event, selection_box, maps[current_map], pos, (screen_width, screen_height))
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                check_which_mouse_button = pygame.mouse.get_pressed()
+                if check_which_mouse_button[0]:
+                    close_game_check(event, pos, screen_dims[0], screen_dims[1])
+                    selection_box.draw_box(screen_dims[0], screen_dims[1], pos)
+                elif check_which_mouse_button[1]:
+                    # Right click processing, probably nothing with nothing selected
+                    pass
 
-            else:
-                selected = units_selected(event, selection_box, selected, maps[current_map], pos, (screen_width, screen_height))
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if selection_box.box_active:
+                    selected = selection_box.close_box(current_map, pos, screen_dims)
 
+            elif event.type == pygame.KEYDOWN:
+                if build_mode:
+                    unit_to_place = build_mode(pos, current_map, screen_dims[0], screen_dims[1], unit_to_place)
 
-        maps[current_map].update()
+                elif event.key == pygame.K_b:
+                    build_mode = True
+
+            elif event.type == pygame.KEYUP:
+                # key release processing
+                pass
+
         screen.blit(maps[current_map].background_image, [20, 63])
         screen.blit(ui_pane, [0, 0])
         screen.blit(mouse_coord_stamp, [1700, 15])
