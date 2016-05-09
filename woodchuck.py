@@ -68,6 +68,18 @@ def close_game_check(event, pos, screen_width, screen_height):
             if close_box_left_bound <= pos[0] <= close_box_right_bound and close_box_top_bound <= pos[1] <= close_box_bottom_bound:
                 pygame.QUIT()
 
+def build_mode(event, pos, screen, current_map, screen_width, screen_height, unit_to_place):
+    if event.type == pygame.MOUSEBUTTONDOWN:
+        check_which_mouse_button = pygame.mouse.get_pressed()
+        if check_which_mouse_button[0]:
+            new_unit = objects.unit_to_place(pos[0], pos[1], current_map)
+            current_map.units.add(new_unit)
+
+    if event.type == pygame.KEYDOWN:
+        if event.key == pygame.K_s:
+            unit = objects.serf
+    return unit
+
 
 def none_selected(event, selection_box, current_map, pos, screen_dims):
     selected = []
@@ -85,8 +97,11 @@ def none_selected(event, selection_box, current_map, pos, screen_dims):
             selected = selection_box.close_box(current_map, pos, screen_dims)
 
     elif event.type == pygame.KEYDOWN:
-        # keypress processing
-        pass
+        if build_mode:
+            unit_to_place = build_mode(pos, current_map, screen_dims[0], screen_dims[1], unit_to_place)
+
+        elif event.key == pygame.K_b:
+            build_mode = True
 
     elif event.type == pygame.KEYUP:
         # key release processing
@@ -147,6 +162,8 @@ def main():
     done = False
     selection_box = SelectionBox()
     selected = []
+
+    unit_to_place = None
 
     ui_elements = pygame.sprite.Group()
 
