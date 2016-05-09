@@ -41,19 +41,20 @@ class SelectionBox(object):
             else:
                 self.box_image = self.resize(pos, screen_width, screen_height)
 
-    def close_box(self, current_map, pos):
+    def close_box(self, current_map, pos, screen_dims):
         selected = []
         if self.box_active:
-            self.box_image = self.resize(pos)
+            self.box_image = self.resize(pos, screen_dims[0], screen_dims[1])
             for unit in current_map.units:
-                if self.box_image.collidrect(unit):
+                if self.box_image.colliderect(unit):
                     selected.append(unit)
             if len(selected) == 0:
                 for building in current_map.buildings:
                     if self.box_image.colliderect(building):
                         selected.append(building)
-            self.box_active = False
-            self.start_pos = (0, 0)
+        print("turning off the box now")
+        self.box_active = False
+        self.start_pos = (0, 0)
         return selected
 
 
@@ -80,12 +81,8 @@ def none_selected(event, selection_box, current_map, pos, screen_dims):
             pass
 
     elif event.type == pygame.MOUSEBUTTONUP:
-        check_which_mouse_button = pygame.mouse.get_pressed()
-        if check_which_mouse_button[0]:
-            selected = selection_box.close_box(current_map, selected)
-        elif check_which_mouse_button[1]:
-            # Right click release processing, probably nothing with nothing selected
-            pass
+        if selection_box.box_active:
+            selected = selection_box.close_box(current_map, pos, screen_dims)
 
     elif event.type == pygame.KEYDOWN:
         # keypress processing
@@ -94,7 +91,6 @@ def none_selected(event, selection_box, current_map, pos, screen_dims):
     elif event.type == pygame.KEYUP:
         # key release processing
         pass
-
     return selected
 
 
@@ -112,7 +108,7 @@ def units_selected(event, selection_box, selected, current_map, pos, screen_dims
     elif event.type == pygame.MOUSEBUTTONUP:
         check_which_mouse_button = pygame.mouse.get_pressed()
         if check_which_mouse_button[0]:
-            selected = selection_box.close_box(current_map, selected)
+            selected = selection_box.close_box(current_map, pos, screen_dims)
         elif check_which_mouse_button[1]:
             # Right click release processing
             pass
@@ -196,8 +192,8 @@ def main():
         maps[current_map].buildings.draw(screen)
 
         if selection_box.box_active:
-            box_image = selection_box.box_image
-            pygame.draw.rect(screen, assets.white, box_image, 1)
+            box = selection_box.resize(pos, screen_width, screen_height)
+            pygame.draw.rect(screen, assets.white, box, 1)
         pygame.display.flip()
         clock.tick(60)
         time += 1
