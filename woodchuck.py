@@ -34,6 +34,29 @@ class VariableCase(object):
 game_globals = VariableCase()
 
 
+class Stamps(object):
+    def __init__(self):
+        super().__init__()
+        self.wood_count_stamp = None
+        self.mouse_coord_stamp = None
+        self.build_mode_stamp = None
+        self.lumber_camp_stamp = None
+        self.serf_stamp = None
+
+    def live_stamps(self):
+        font = game_globals.font
+
+        self.mouse_coord_stamp = font.render(str(game_globals.pos), False, assets.black)
+        self.wood_count_stamp = font.render(str((game_globals.maps[game_globals.current_map]).wood), False, assets.white)
+
+    def one_time_stamps(self):
+        font = game_globals.font
+
+        self.build_mode_stamp = font.render("Build Mode   (debug only - press 'e' to exit)", True, assets.black)
+        self.lumber_camp_stamp = font.render("Lumber Camp", True, assets.black)
+        self.serf_stamp = font.render("Serf", True, assets.black)
+
+
 class SelectionBox(object):
     def __init__(self):
         super().__init__()
@@ -114,8 +137,8 @@ def event_dispatcher():
                     game_globals.selection_box.close_box()
 
             elif event.type == pygame.KEYDOWN:
-                if build_mode:
-                    game_globals.unit_to_place = build_mode(event)
+                if game_globals.build_mode:
+                    debug_unit_selection(event)
 
                 elif event.key == pygame.K_b:
                     game_globals.build_mode = True
@@ -125,7 +148,7 @@ def event_dispatcher():
                 pass
 
 
-def build_mode(event):
+def debug_unit_selection(event):
     if event.type == pygame.MOUSEBUTTONDOWN:
         check_which_mouse_button = pygame.mouse.get_pressed()
         if check_which_mouse_button[0]:
@@ -137,8 +160,11 @@ def build_mode(event):
 
     if event.type == pygame.KEYDOWN:
         if event.key == pygame.K_s:
-            unit = objects.serf
-    return unit
+            game_globals.unit_to_place = objects.Serf
+        elif event.key == pygame.K_l:
+            game_globals.unit_to_place = objects.LumberCamp
+        elif event.key == pygame.K_e:
+            game_globals.build_mode = False
 
 
 def main():
@@ -158,28 +184,27 @@ def main():
     game_globals.selection_box = SelectionBox()
     game_globals.ui_elements = pygame.sprite.Group()
 
-    font = game_globals.font
+    render_stamps = Stamps()
+    render_stamps.one_time_stamps()
+
 
     while not game_globals.done:
         game_globals.pos = pygame.mouse.get_pos()
-
-        mouse_coord_stamp = font.render(str(game_globals.pos), False, assets.black)
-        wood_count_stamp = font.render(str((game_globals.maps[game_globals.current_map]).wood), False, assets.white)
-        build_mode_stamp = font.render("Build Mode", True, assets.black)
-        lumber_camp_stamp = font.render("Lumber Camp", True, assets.black)
-        serf_stamp = font.render("Serf", True, assets.black)
-
         event_dispatcher()
+        render_stamps.live_stamps()
 
         game_globals.screen.blit(game_globals.maps[game_globals.current_map].background_image, [20, 63])
         game_globals.screen.blit(game_globals.ui_pane, [0, 0])
-        game_globals.screen.blit(mouse_coord_stamp, [1700, 15])
-        game_globals.screen.blit(wood_count_stamp, [70, 17])
+        game_globals.screen.blit(render_stamps.mouse_coord_stamp, [1700, 15])
+        game_globals.screen.blit(render_stamps.wood_count_stamp, [70, 17])
         if len(game_globals.selected) > 0:
             selected_stamp = font.render(game_globals.selected[0].name, True, assets.black)
             game_globals.screen.blit(selected_stamp, [200, 870])
 
         game_globals.maps[game_globals.current_map].buildings.draw(game_globals.screen)
+
+        if game_globals.build_mode:
+            game_globals.screen.blit(render_stamps.build_mode_stamp, [200, 870])
 
         if game_globals.selection_box.box_active:
             box = game_globals.selection_box.resize()
