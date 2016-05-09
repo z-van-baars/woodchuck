@@ -125,19 +125,19 @@ def main():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 check_which_mouse_button = pygame.mouse.get_pressed()
                 if check_which_mouse_button[0]:
-                    close_game_check(event, pos, screen_dims[0], screen_dims[1])
-                    selection_box.draw_box(screen_dims[0], screen_dims[1], pos)
+                    close_game_check(event, pos, screen_width, screen_height)
+                    selection_box.draw_box(screen_width, screen_height, pos)
                 elif check_which_mouse_button[1]:
                     # Right click processing, probably nothing with nothing selected
                     pass
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if selection_box.box_active:
-                    selected = selection_box.close_box(current_map, pos, screen_dims)
+                    selected = selection_box.close_box(current_map, pos, screen_width, screen_height)
 
             elif event.type == pygame.KEYDOWN:
                 if build_mode:
-                    unit_to_place = build_mode(pos, current_map, screen_dims[0], screen_dims[1], unit_to_place)
+                    unit_to_place = build_mode(pos, current_map, screen_width, screen_height, unit_to_place)
 
                 elif event.key == pygame.K_b:
                     build_mode = True
@@ -151,18 +151,9 @@ def main():
         screen.blit(mouse_coord_stamp, [1700, 15])
         screen.blit(wood_count_stamp, [70, 17])
         if len(selected) > 0:
-            for each in selected:
-                name = each.name
-            selected_stamp = font.render(name, True, assets.black)
+            selected_stamp = font.render(selected[0].name, True, assets.black)
             screen.blit(selected_stamp, [200, 870])
 
-        if build_mode:
-            building_cursor.rect.x = pos[0]
-            building_cursor.rect.y = pos[1]
-            for each in ui_elements:
-                each.valid_build_site()
-            ui_elements.draw(screen)
-            screen.blit(build_mode_stamp, [200, 870])
 
         maps[current_map].buildings.draw(screen)
 
