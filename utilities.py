@@ -20,9 +20,15 @@ def get_vector(self, a, b, x, y):
     factor = distance_to_target / self.speed
     x_dist = a - x
     y_dist = b - y
-    change_x = x_dist / factor
-    change_y = y_dist / factor
-    change_x = round(change_x)
-    change_y = round(change_y)
+    if x_dist == 0:
+        change_x = 0
+    else:
+        change_x = x_dist / factor
+        change_x = round(change_x)
+    if y_dist == 0:
+        change_y = 0
+    else:
+        change_y = y_dist / factor
+        change_y = round(change_y)
 
     return (change_x, change_y)

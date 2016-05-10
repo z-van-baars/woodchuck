@@ -138,10 +138,10 @@ def event_dispatcher():
                     if game_globals.build_mode:
                         debug_unit_selection(event)
                     game_globals.selection_box.draw_box()
-                elif check_which_mouse_button[1]:
+                elif check_which_mouse_button[2]:
                     if len(game_globals.selected) > 0:
                         for each in game_globals.selected:
-                            each.target[1] = game_globals.pos
+                            each.target = (game_globals.pos[0], game_globals.pos[1])
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if game_globals.selection_box.box_active:
@@ -168,8 +168,10 @@ def debug_unit_selection(event):
             current_map = game_globals.maps[game_globals.current_map]
             new_unit = game_globals.unit_to_place(x, y, current_map)
             game_globals.unit_to_place = None
-
-            game_globals.maps[game_globals.current_map].units.add(new_unit)
+            if game_globals.unit_to_place == serf.Serf:
+                game_globals.maps[game_globals.current_map].units.add(new_unit)
+            else:
+                game_globals.maps[game_globals.current_map].buildings.add(new_unit)
 
     if event.type == pygame.KEYDOWN:
         if event.key == pygame.K_s:
@@ -227,9 +229,8 @@ def main():
         event_dispatcher()
         render_stamps.update_live_stamps()
 
-        if game_globals.maps[game_globals.current_map].entity_list:
-            for each in game_globals.maps[game_globals.current_map].entity_list:
-                each.do_thing()
+        for each in game_globals.maps[game_globals.current_map].units:
+            each.do_thing(game_globals.maps[game_globals.current_map])
 
         render_screen_objects(render_stamps)
 
