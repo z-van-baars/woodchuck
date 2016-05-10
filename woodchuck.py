@@ -3,6 +3,9 @@ import assets
 import objects
 import game_map
 import math
+import serf
+import lumber_camp
+import tree
 
 
 class VariableCase(object):
@@ -43,13 +46,14 @@ class Stamps(object):
         self.lumber_camp_stamp = None
         self.serf_stamp = None
 
-    def live_stamps(self):
+    def update_live_stamps(self):
         font = game_globals.font
 
+        self.to_build_stamp = None
         self.mouse_coord_stamp = font.render(str(game_globals.pos), False, assets.black)
         self.wood_count_stamp = font.render(str((game_globals.maps[game_globals.current_map]).wood), False, assets.white)
 
-    def one_time_stamps(self):
+    def create_one_time_stamps(self):
         font = game_globals.font
 
         self.build_mode_stamp = font.render("Build Mode   (debug only - press 'e' to exit)", True, assets.black)
@@ -87,6 +91,10 @@ class SelectionBox(object):
 
     def draw_box(self):
         if 20 <= game_globals.pos[0] <= (game_globals.screen_width - 20) and 63 <= game_globals.pos[1] <= (game_globals.screen_height - 226):
+            if game_globals.build_mode:
+                game_globals.build_mode = False
+            if game_globals.selected:
+                game_globals.selected = []
             if not self.box_active:
                 self.box_active = True
                 self.start_pos = game_globals.pos
@@ -127,10 +135,13 @@ def event_dispatcher():
                 check_which_mouse_button = pygame.mouse.get_pressed()
                 if check_which_mouse_button[0]:
                     close_game_check(event)
+                    if game_globals.build_mode:
+                        debug_unit_selection(event)
                     game_globals.selection_box.draw_box()
                 elif check_which_mouse_button[1]:
-                    # Right click processing, probably nothing with nothing selected
-                    pass
+                    if len(game_globals.selected) > 0:
+                        for each in game_globals.selected:
+                            each.target[1] = game_globals.pos
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if game_globals.selection_box.box_active:
@@ -149,22 +160,46 @@ def event_dispatcher():
 
 
 def debug_unit_selection(event):
-    if event.type == pygame.MOUSEBUTTONDOWN:
+    if event.type == pygame.MOUSEBUTTONDOWN and game_globals.unit_to_place:
         check_which_mouse_button = pygame.mouse.get_pressed()
         if check_which_mouse_button[0]:
             x = game_globals.pos[0]
             y = game_globals.pos[1]
             current_map = game_globals.maps[game_globals.current_map]
-            new_unit = objects.unit_to_place(x, y, current_map)
-            current_map.units.add(new_unit)
+            new_unit = game_globals.unit_to_place(x, y, current_map)
+            game_globals.unit_to_place = None
+
+            game_globals.maps[game_globals.current_map].units.add(new_unit)
 
     if event.type == pygame.KEYDOWN:
         if event.key == pygame.K_s:
-            game_globals.unit_to_place = objects.Serf
+            game_globals.unit_to_place = serf.Serf
         elif event.key == pygame.K_l:
-            game_globals.unit_to_place = objects.LumberCamp
+            game_globals.unit_to_place = lumber_camp.LumberCamp
         elif event.key == pygame.K_e:
             game_globals.build_mode = False
+        elif event.key == pygame.K_t:
+            game_globals.unit_to_place = tree.Tree
+
+
+def render_screen_objects(render_stamps):
+    game_globals.screen.blit(game_globals.maps[game_globals.current_map].background_image, [20, 63])
+    game_globals.screen.blit(game_globals.ui_pane, [0, 0])
+    game_globals.screen.blit(render_stamps.mouse_coord_stamp, [1700, 15])
+    game_globals.screen.blit(render_stamps.wood_count_stamp, [70, 17])
+    if len(game_globals.selected) > 0:
+        selected_stamp = game_globals.font.render(game_globals.selected[0].name, True, assets.black)
+        game_globals.screen.blit(selected_stamp, [200, 870])
+
+    game_globals.maps[game_globals.current_map].buildings.draw(game_globals.screen)
+    game_globals.maps[game_globals.current_map].units.draw(game_globals.screen)
+
+    if game_globals.build_mode:
+        game_globals.screen.blit(render_stamps.build_mode_stamp, [200, 870])
+
+    if game_globals.selection_box.box_active:
+        box = game_globals.selection_box.resize()
+        pygame.draw.rect(game_globals.screen, assets.white, box, 1)
 
 
 def main():
@@ -185,30 +220,19 @@ def main():
     game_globals.ui_elements = pygame.sprite.Group()
 
     render_stamps = Stamps()
-    render_stamps.one_time_stamps()
-
+    render_stamps.create_one_time_stamps()
 
     while not game_globals.done:
         game_globals.pos = pygame.mouse.get_pos()
         event_dispatcher()
-        render_stamps.live_stamps()
+        render_stamps.update_live_stamps()
 
-        game_globals.screen.blit(game_globals.maps[game_globals.current_map].background_image, [20, 63])
-        game_globals.screen.blit(game_globals.ui_pane, [0, 0])
-        game_globals.screen.blit(render_stamps.mouse_coord_stamp, [1700, 15])
-        game_globals.screen.blit(render_stamps.wood_count_stamp, [70, 17])
-        if len(game_globals.selected) > 0:
-            selected_stamp = font.render(game_globals.selected[0].name, True, assets.black)
-            game_globals.screen.blit(selected_stamp, [200, 870])
+        if game_globals.maps[game_globals.current_map].entity_list:
+            for each in game_globals.maps[game_globals.current_map].entity_list:
+                each.do_thing()
 
-        game_globals.maps[game_globals.current_map].buildings.draw(game_globals.screen)
+        render_screen_objects(render_stamps)
 
-        if game_globals.build_mode:
-            game_globals.screen.blit(render_stamps.build_mode_stamp, [200, 870])
-
-        if game_globals.selection_box.box_active:
-            box = game_globals.selection_box.resize()
-            pygame.draw.rect(game_globals.screen, assets.white, box, 1)
         pygame.display.flip()
         game_globals.clock.tick(60)
         game_globals.time += 1
