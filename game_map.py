@@ -14,4 +14,4 @@ class GameMap(object):
         self.terrain = pygame.sprite.Group()
 
     def update(self):
-    	pass
+        pass

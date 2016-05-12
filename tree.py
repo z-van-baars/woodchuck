@@ -20,6 +20,7 @@ class Tree(entity.Entity):
         self.rect.y = y
         self.target = None
         self.health = 100
+        self.max_health = 100
         self.wood = 100
         self.wood_cost = 0
         self.name = "Tree"

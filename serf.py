@@ -19,10 +19,16 @@ class Serf(entity.Entity):
         self.change_x = 0
         self.change_y = 0
         self.target = None
+        self.target_coords = None
         self.health = 30
+        self.max_health = 30
         self.carry_capacity = 10
+        self.wood = 0
         self.name = "Serf"
         self.target = None
+        self.jobs = ["Idle", "Lumberjack"]
+        self.job = 0
+        self.current_map = current_map
 
     def check_bound(self, current_map):
         if self.rect.left < 20:
@@ -43,14 +49,31 @@ class Serf(entity.Entity):
         self.collide_y(current_map)
         self.check_bound(current_map)
 
-    def do_thing(self, current_map):
-        if self.target:
-            changes = utilities.get_vector(self, self.target[0], self.target[1], self.rect.x + 15, self.rect.y + 22)
+    def lumberjack(self):
+        if self.wood >= self.carry_capacity:
+            # drop off load of wood at gather point
+            pass
+        if self.wood < self.carry_capacity:
+            # keep lumberjacking / move to target tree
+            pass
+        if self.wood == 0:
+            # return to target tree
+            pass
+
+    def no_profession(self):
+        if self.target_coords:
+            changes = utilities.get_vector(self, self.target_coords[0], self.target_coords[1], self.rect.x + 15, self.rect.y + 22)
 
             self.change_x = changes[0]
             self.change_y = changes[1]
 
-        self.move(current_map)
+        self.move(self.current_map)
+
+    def do_thing(self, current_map):
+        if self.job == 0:
+            self.no_profession()
+        if self.job == 1:
+            self.lumberjack()
 
     def collide_x(self, current_map):
         serf_hit_list = []

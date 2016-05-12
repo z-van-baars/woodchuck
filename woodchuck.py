@@ -6,6 +6,7 @@ import math
 import serf
 import lumber_camp
 import tree
+import entity
 
 
 class VariableCase(object):
@@ -33,6 +34,7 @@ class VariableCase(object):
         self.unit_to_place = None
 
         self.ui_elements = None
+        self.health_boxes_to_draw = None
 
 game_globals = VariableCase()
 
@@ -109,6 +111,7 @@ class SelectionBox(object):
                 game_globals.build_mode = False
             if game_globals.selected:
                 game_globals.selected = []
+                game_globals.health_boxes_to_draw = pygame.sprite.Group()
             if not self.box_active:
                 self.box_active = True
                 self.start_pos = game_globals.pos
@@ -121,10 +124,12 @@ class SelectionBox(object):
             for unit in game_globals.maps[game_globals.current_map].units:
                 if self.box_image.colliderect(unit.rect):
                     game_globals.selected.append(unit)
+                    game_globals.health_boxes_to_draw.add(unit.health_box)
             if len(game_globals.selected) == 0:
                 for building in game_globals.maps[game_globals.current_map].buildings:
                     if self.box_image.colliderect(building):
                         game_globals.selected.append(building)
+
         self.box_active = False
         self.start_pos = (0, 0)
 
@@ -153,9 +158,18 @@ def event_dispatcher():
                         debug_unit_selection(event)
                     game_globals.selection_box.draw_box()
                 elif check_which_mouse_button[2]:
+                    unit_at_target = None
+                    target_grabber = pygame.Rect(game_globals.pos[0], game_globals.pos[1], 1, 1)
                     if len(game_globals.selected) > 0:
+                        for unit in game_globals.maps[game_globals.current_map].units:
+                            if target_grabber.colliderect(unit):
+                                unit_at_target = unit
                         for each in game_globals.selected:
-                            each.target = (game_globals.pos[0], game_globals.pos[1])
+                            if unit_at_target:
+                                each.target = unit_at_target
+                                each.target_coords = (unit_at_target.rect.x, unit_at_target.rect.y)
+                            else:
+                                each.target_coords = (game_globals.pos[0], game_globals.pos[1])
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if game_globals.selection_box.box_active:
@@ -181,6 +195,11 @@ def debug_unit_selection(event):
             y = game_globals.pos[1]
             current_map = game_globals.maps[game_globals.current_map]
             new_unit = game_globals.unit_to_place(x, y, current_map)
+
+            new_health_box = entity.HealthBox(new_unit.rect.x, new_unit.rect.y, new_unit.health, new_unit.max_health)
+            new_unit_width = new_unit.image.get_width()
+            new_health_box.get_new_position(new_unit.rect.x, new_unit.rect.y, new_unit_width)
+            new_unit.health_box = new_health_box
             game_globals.unit_to_place = None
             game_globals.maps[game_globals.current_map].units.add(new_unit)
 
@@ -201,11 +220,16 @@ def render_screen_objects(render_stamps):
     game_globals.screen.blit(render_stamps.mouse_coord_stamp, [1700, 15])
     game_globals.screen.blit(render_stamps.wood_count_stamp, [70, 17])
     if len(game_globals.selected) > 0:
+        for each in game_globals.selected:
+            each.health_box.get_health_pixels(each.health)
+            each_width = each.image.get_width()
+            each.health_box.get_new_position(each.rect.x, each.rect.y, each_width)
         selected_stamp = game_globals.font.render(game_globals.selected[0].name, True, assets.black)
         game_globals.screen.blit(selected_stamp, [200, 870])
 
     game_globals.maps[game_globals.current_map].buildings.draw(game_globals.screen)
     game_globals.maps[game_globals.current_map].units.draw(game_globals.screen)
+    game_globals.health_boxes_to_draw.draw(game_globals.screen)
 
     if game_globals.build_mode:
         game_globals.screen.blit(render_stamps.build_mode_stamp, [200, 870])
@@ -215,11 +239,7 @@ def render_screen_objects(render_stamps):
         pygame.draw.rect(game_globals.screen, assets.white, box, 1)
 
 
-def main():
-    pygame.mixer.pre_init(44100, -16, 1, 512)
-    pygame.init()
-    pygame.display.set_caption("Woodchuck")
-
+def init_game_state():
     game_globals.screen_width = 1920
     game_globals.screen_height = 1080
     game_globals.screen = pygame.display.set_mode([game_globals.screen_width, game_globals.screen_height], pygame.FULLSCREEN)
@@ -231,6 +251,15 @@ def main():
 
     game_globals.selection_box = SelectionBox()
     game_globals.ui_elements = pygame.sprite.Group()
+    game_globals.health_boxes_to_draw = pygame.sprite.Group()
+
+
+def main():
+    pygame.mixer.pre_init(44100, -16, 1, 512)
+    pygame.init()
+    pygame.display.set_caption("Woodchuck")
+
+    init_game_state()
 
     render_stamps = Stamps()
     render_stamps.create_one_time_stamps()

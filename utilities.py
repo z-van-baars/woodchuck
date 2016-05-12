@@ -15,7 +15,7 @@ def distance(a, b, x, y):
     return c
 
 
-def return_smaller(a, b):
+def abs_min(a, b):
     absolute_a = abs(a)
     absolute_b = abs(b)
 
@@ -35,12 +35,12 @@ def get_vector(self, a, b, x, y):
     else:
         change_x = x_dist / factor
         change_x = round(change_x)
-        change_x = return_smaller(change_x, x_dist)
+        change_x = abs_min(change_x, x_dist)
     if y_dist == 0:
         change_y = 0
     else:
         change_y = y_dist / factor
         change_y = round(change_y)
-        change_y = return_smaller(change_y, y_dist)
+        change_y = abs_min(change_y, y_dist)
 
     return (change_x, change_y)
