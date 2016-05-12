@@ -11,6 +11,7 @@ class GameMap(object):
         self.wood = 0
         self.buildings = pygame.sprite.Group()
         self.units = pygame.sprite.Group()
+        self.terrain = pygame.sprite.Group()
 
     def update(self):
     	pass

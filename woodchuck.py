@@ -105,7 +105,7 @@ class SelectionBox(object):
         if self.box_active:
             self.box_image = self.resize()
             for unit in game_globals.maps[game_globals.current_map].units:
-                if self.box_image.colliderect(unit):
+                if self.box_image.colliderect(unit.rect):
                     game_globals.selected.append(unit)
             if len(game_globals.selected) == 0:
                 for building in game_globals.maps[game_globals.current_map].buildings:
@@ -168,10 +168,7 @@ def debug_unit_selection(event):
             current_map = game_globals.maps[game_globals.current_map]
             new_unit = game_globals.unit_to_place(x, y, current_map)
             game_globals.unit_to_place = None
-            if game_globals.unit_to_place == serf.Serf:
-                game_globals.maps[game_globals.current_map].units.add(new_unit)
-            else:
-                game_globals.maps[game_globals.current_map].buildings.add(new_unit)
+            game_globals.maps[game_globals.current_map].units.add(new_unit)
 
     if event.type == pygame.KEYDOWN:
         if event.key == pygame.K_s:
