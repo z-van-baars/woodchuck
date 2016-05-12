@@ -1,12 +1,12 @@
 import pygame
 import assets
-import objects
 import game_map
 import math
 import serf
 import lumber_camp
 import tree
 import entity
+import sounds
 
 
 class VariableCase(object):
@@ -148,72 +148,78 @@ def close_game_check(event):
 
 
 def event_dispatcher():
+    collisions_in_site = None
+    if game_globals.unit_to_place is not None:
+        collisions_in_site = get_cursor_image()
     for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                game_globals.done = True
+        if event.type == pygame.QUIT:
+            game_globals.done = True
 
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                check_which_mouse_button = pygame.mouse.get_pressed()
-                if check_which_mouse_button[0]:
-                    close_game_check(event)
-                    if game_globals.build_mode:
-                        debug_unit_selection(event)
-                    game_globals.selection_box.draw_box()
-                elif check_which_mouse_button[2]:
-                    unit_at_target = None
-                    target_grabber = pygame.Rect(game_globals.pos[0], game_globals.pos[1], 1, 1)
-                    if len(game_globals.selected) > 0:
-                        for unit in game_globals.maps[game_globals.current_map].units:
-                            if target_grabber.colliderect(unit):
-                                unit_at_target = unit
-                        for each in game_globals.selected:
-                            if unit_at_target:
-                                each.target = unit_at_target
-                                each.target_coords = (unit_at_target.rect.x, unit_at_target.rect.y)
-                            else:
-                                each.target_coords = (game_globals.pos[0], game_globals.pos[1])
-
-            elif event.type == pygame.MOUSEBUTTONUP:
-                if game_globals.selection_box.box_active:
-                    game_globals.selection_box.close_box()
-
-            elif event.type == pygame.KEYDOWN:
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            check_which_mouse_button = pygame.mouse.get_pressed()
+            if check_which_mouse_button[0]:
+                close_game_check(event)
                 if game_globals.build_mode:
-                    debug_unit_selection(event)
+                    debug_unit_selection(event, collisions_in_site)
+                else:
+                    game_globals.selection_box.draw_box()
+            elif check_which_mouse_button[2]:
+                unit_at_target = None
+                target_grabber = pygame.Rect(game_globals.pos[0], game_globals.pos[1], 1, 1)
+                if len(game_globals.selected) > 0:
+                    for unit in game_globals.maps[game_globals.current_map].units:
+                        if target_grabber.colliderect(unit):
+                            unit_at_target = unit
+                    for each in game_globals.selected:
+                        if unit_at_target:
+                            each.target = unit_at_target
+                            each.target_coords = (unit_at_target.rect.x, unit_at_target.rect.y)
+                        else:
+                            each.target_coords = (game_globals.pos[0], game_globals.pos[1])
 
-                elif event.key == pygame.K_b:
-                    game_globals.build_mode = True
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if game_globals.selection_box.box_active:
+                game_globals.selection_box.close_box()
 
-            elif event.type == pygame.KEYUP:
-                # key release processing
-                pass
+        elif event.type == pygame.KEYDOWN:
+            if game_globals.build_mode:
+                debug_unit_selection(event, collisions_in_site)
+
+            elif event.key == pygame.K_b:
+                game_globals.build_mode = True
+
+        elif event.type == pygame.KEYUP:
+            # key release processing
+            pass
 
 
-def debug_unit_selection(event):
+def get_cursor_image():
+    if game_globals.build_cursor is None:
+        game_globals.build_cursor = game_globals.unit_to_place(game_globals.pos[0], game_globals.pos[1], game_globals.maps[game_globals.current_map])
+    elif game_globals.build_cursor is not None:
+        game_globals.build_cursor.rect.x = game_globals.pos[0]
+        game_globals.build_cursor.rect.y = game_globals.pos[1]
+    collisions_in_site = (pygame.sprite.spritecollide(game_globals.build_cursor, game_globals.maps[game_globals.current_map].units, False))
 
-    if game_globals.unit_to_place != None:
-        pygame.mouse.set_visible(0)
-        if not game_globals.build_cursor:
-            game_globals.build_cursor = game_globals.unit_to_place(game_globals.pos[0], game_globals.pos[1], game_globals.maps[game_globals.current_map])
-        else:
-            game_globals.build_cursor.rect.x = game_globals.pos[0]
-            game_globals.build_cursor.rect.y = game_globals.pos[1]
-        collisions_in_site = (pygame.sprite.spritecollide(game_globals.build_cursor, game_globals.maps[game_globals.current_map].units, False))
-        if collisions_in_site:
-            game_globals.build_cursor.image = game_globals.build_cursor.invalid_site_image
-        else:
-            game_globals.build_cursor.image = game_globals.build_cursor.build_image
+    if collisions_in_site:
+        game_globals.build_cursor.image = game_globals.build_cursor.invalid_site_image
+    else:
+        game_globals.build_cursor.image = game_globals.build_cursor.build_image
         game_globals.ui_elements = pygame.sprite.Group()
         game_globals.ui_elements.add(game_globals.build_cursor)
-    elif game_globals.unit_to_place == None:
+    return collisions_in_site
+
+
+def debug_unit_selection(event, collisions_in_site):
+    if game_globals.unit_to_place is None:
         game_globals.build_cursor = None
         collisions_in_site = None
 
     if event.type == pygame.MOUSEBUTTONDOWN and game_globals.unit_to_place:
         check_which_mouse_button = pygame.mouse.get_pressed()
         if check_which_mouse_button[0]:
-            if not collisions_in_site:
-                pygame.mouse.set_visible(1)
+            if len(collisions_in_site) == 0:
+                pygame.mouse.set_visible(True)
                 new_unit = game_globals.build_cursor
                 new_unit.image = new_unit.built_image
                 new_health_box = entity.HealthBox(new_unit.rect.x, new_unit.rect.y, new_unit.health, new_unit.max_health)
@@ -223,16 +229,22 @@ def debug_unit_selection(event):
                 game_globals.unit_to_place = None
                 game_globals.build_cursor = None
                 game_globals.maps[game_globals.current_map].units.add(new_unit)
+                game_globals.pos = (new_unit.rect.x, new_unit.rect.y)
+                print(game_globals.pos)
 
     if event.type == pygame.KEYDOWN:
         if event.key == pygame.K_s:
             game_globals.unit_to_place = serf.Serf
+            pygame.mouse.set_visible(False)
         elif event.key == pygame.K_l:
             game_globals.unit_to_place = lumber_camp.LumberCamp
+            pygame.mouse.set_visible(False)
         elif event.key == pygame.K_e:
             game_globals.build_mode = False
+            pygame.mouse.set_visible(True)
         elif event.key == pygame.K_t:
             game_globals.unit_to_place = tree.Tree
+            pygame.mouse.set_visible(False)
 
 
 def render_screen_objects(render_stamps):

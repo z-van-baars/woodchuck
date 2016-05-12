@@ -2,6 +2,8 @@ import pygame
 import assets
 import entity
 import utilities
+import sounds
+import random
 
 
 serf_img = pygame.image.load("art/serf.png")
@@ -37,6 +39,9 @@ class Serf(entity.Entity):
         self.job = 0
         self.current_map = current_map
 
+        # spawn_sound = random.choice(sounds.serf_grunts)
+        # pygame.mixer.Sound.play(spawn_sound)
+
     def check_bound(self, current_map):
         if self.rect.left < 20:
             self.rect.left = 20
@@ -49,11 +54,11 @@ class Serf(entity.Entity):
 
     def move(self, current_map):
         self.rect.x += self.change_x
-        self.collide_x(current_map)
+        # self.collide_x(current_map)
         self.check_bound(current_map)
 
         self.rect.y += self.change_y
-        self.collide_y(current_map)
+        # self.collide_y(current_map)
         self.check_bound(current_map)
 
     def lumberjack(self):
@@ -74,7 +79,26 @@ class Serf(entity.Entity):
             self.change_x = changes[0]
             self.change_y = changes[1]
 
-        self.move(self.current_map)
+        if not self.collide_check():
+            self.move(self.current_map)
+
+    def collide_check(self):
+        projection = pygame.sprite.Sprite()
+        projection.image = self.image
+        projection.rect = self.image.get_rect()
+        projection.rect.x = self.rect.x
+        projection.rect.y = self.rect.y
+
+        projection.rect.x += self.change_x
+        projection.rect.y += self.change_y
+
+        future_collisions = None
+        future_collisions = (pygame.sprite.spritecollide(self, self.current_map.units, False))
+        future_collisions.remove(self)
+        if future_collisions:
+            return True
+        else:
+            return False
 
     def do_thing(self, current_map):
         if self.job == 0:
