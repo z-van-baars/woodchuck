@@ -73,19 +73,33 @@ class SelectionBox(object):
         self.box_image = pygame.Rect(self.start_pos[0], self.start_pos[1], self.x, self.y)
 
     def resize(self):
+
+        # old buggy selection box code
+        # self.x = game_globals.pos[0] - self.start_pos[0]
+        # self.y = game_globals.pos[1] - self.start_pos[1]
+        # self.x = abs(self.x)
+        # self.y = abs(self.y)
+
+        # if game_globals.pos[0] < 21:
+            # self.x = 21 - self.start_pos[0]
+        # elif game_globals.pos[0] > game_globals.screen_width - 20:
+            # self.x = (game_globals.screen_width - 20) - self.start_pos[0]
+        # if game_globals.pos[1] < 63:
+            # self.y = 63 - self.start_pos[1]
+        # elif game_globals.pos[1] > game_globals.screen_height - 224:
+            # self.y = (game_globals.screen_height - 224) - self.start_pos[1]
+
         self.x = game_globals.pos[0] - self.start_pos[0]
         self.y = game_globals.pos[1] - self.start_pos[1]
+        top_left_corner = self.start_pos
+        if self.x < 0:
+            self.x = abs(self.x)
+            top_left_corner = (top_left_corner[0] - self.x, top_left_corner[1])
+        if self.y < 0:
+            self.y = abs(self.y)
+            top_left_corner = (top_left_corner[0], top_left_corner[1] - self.y)
 
-        if game_globals.pos[0] < 21:
-            self.x = 21 - self.start_pos[0]
-        elif game_globals.pos[0] > game_globals.screen_width - 20:
-            self.x = (game_globals.screen_width - 20) - self.start_pos[0]
-        if game_globals.pos[1] < 63:
-            self.y = 63 - self.start_pos[1]
-        elif game_globals.pos[1] > game_globals.screen_height - 224:
-            self.y = (game_globals.screen_height - 224) - self.start_pos[1]
-
-        new_box = pygame.Rect(self.start_pos[0], self.start_pos[1], self.x, self.y)
+        new_box = pygame.Rect(top_left_corner[0], top_left_corner[1], self.x, self.y)
 
         return new_box
 

@@ -14,6 +14,7 @@ def distance(a, b, x, y):
     c = math.sqrt((a1 * a1) + (b1 * b1))
     return c
 
+
 def return_smaller(a, b):
     absolute_a = abs(a)
     absolute_b = abs(b)

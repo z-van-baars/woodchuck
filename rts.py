@@ -70,9 +70,11 @@ while game_loop:
         if selection_box_y < 0:
             selection_box_y = abs(selection_box_y)
             top_left_corner = (top_left_corner[0], top_left_corner[1] - selection_box_y)
-        current_selection_box = pygame.Rect((top_left_corner), (selection_box_x, selection_box_y), 1)
+        current_selection_box = pygame.Rect(top_left_corner[0], top_left_corner[1], selection_box_x, selection_box_y)
+        print(selection_box_x, selection_box_y)
+
         return current_selection_box
-        
+
     # checks a boolean and recieves the current selection box
     if draw_new_selection_box == True:
         selection_box = calculate_current_selection_box()
