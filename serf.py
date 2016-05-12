@@ -5,13 +5,20 @@ import utilities
 
 
 serf_img = pygame.image.load("art/serf.png")
+serf_build_img = pygame.image.load("art/serf_build.png")
+serf_invalid_img = pygame.image.load("art/serf_invalid.png")
 serf_img.set_colorkey(assets.key)
+serf_build_img.set_colorkey(assets.key)
+serf_invalid_img.set_colorkey(assets.key)
 
 
 class Serf(entity.Entity):
     def __init__(self, x, y, current_map):
         super().__init__(x, y, current_map)
-        self.image = serf_img
+        self.invalid_site_image = serf_invalid_img
+        self.built_image = serf_img
+        self.build_image = serf_build_img
+        self.image = serf_build_img
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y

@@ -33,6 +33,8 @@ class VariableCase(object):
 
         self.unit_to_place = None
 
+        self.build_cursor = None
+
         self.ui_elements = None
         self.health_boxes_to_draw = None
 
@@ -188,20 +190,39 @@ def event_dispatcher():
 
 
 def debug_unit_selection(event):
+
+    if game_globals.unit_to_place != None:
+        pygame.mouse.set_visible(0)
+        if not game_globals.build_cursor:
+            game_globals.build_cursor = game_globals.unit_to_place(game_globals.pos[0], game_globals.pos[1], game_globals.maps[game_globals.current_map])
+        else:
+            game_globals.build_cursor.rect.x = game_globals.pos[0]
+            game_globals.build_cursor.rect.y = game_globals.pos[1]
+        collisions_in_site = (pygame.sprite.spritecollide(game_globals.build_cursor, game_globals.maps[game_globals.current_map].units, False))
+        if collisions_in_site:
+            game_globals.build_cursor.image = game_globals.build_cursor.invalid_site_image
+        else:
+            game_globals.build_cursor.image = game_globals.build_cursor.build_image
+        game_globals.ui_elements = pygame.sprite.Group()
+        game_globals.ui_elements.add(game_globals.build_cursor)
+    elif game_globals.unit_to_place == None:
+        game_globals.build_cursor = None
+        collisions_in_site = None
+
     if event.type == pygame.MOUSEBUTTONDOWN and game_globals.unit_to_place:
         check_which_mouse_button = pygame.mouse.get_pressed()
         if check_which_mouse_button[0]:
-            x = game_globals.pos[0]
-            y = game_globals.pos[1]
-            current_map = game_globals.maps[game_globals.current_map]
-            new_unit = game_globals.unit_to_place(x, y, current_map)
-
-            new_health_box = entity.HealthBox(new_unit.rect.x, new_unit.rect.y, new_unit.health, new_unit.max_health)
-            new_unit_width = new_unit.image.get_width()
-            new_health_box.get_new_position(new_unit.rect.x, new_unit.rect.y, new_unit_width)
-            new_unit.health_box = new_health_box
-            game_globals.unit_to_place = None
-            game_globals.maps[game_globals.current_map].units.add(new_unit)
+            if not collisions_in_site:
+                pygame.mouse.set_visible(1)
+                new_unit = game_globals.build_cursor
+                new_unit.image = new_unit.built_image
+                new_health_box = entity.HealthBox(new_unit.rect.x, new_unit.rect.y, new_unit.health, new_unit.max_health)
+                new_unit_width = new_unit.image.get_width()
+                new_health_box.get_new_position(new_unit.rect.x, new_unit.rect.y, new_unit_width)
+                new_unit.health_box = new_health_box
+                game_globals.unit_to_place = None
+                game_globals.build_cursor = None
+                game_globals.maps[game_globals.current_map].units.add(new_unit)
 
     if event.type == pygame.KEYDOWN:
         if event.key == pygame.K_s:
@@ -230,6 +251,7 @@ def render_screen_objects(render_stamps):
     game_globals.maps[game_globals.current_map].buildings.draw(game_globals.screen)
     game_globals.maps[game_globals.current_map].units.draw(game_globals.screen)
     game_globals.health_boxes_to_draw.draw(game_globals.screen)
+    game_globals.ui_elements.draw(game_globals.screen)
 
     if game_globals.build_mode:
         game_globals.screen.blit(render_stamps.build_mode_stamp, [200, 870])

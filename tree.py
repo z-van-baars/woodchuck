@@ -3,15 +3,19 @@ import assets
 import entity
 
 tree_img = pygame.image.load("art/tree.png")
+tree_build_img = pygame.image.load("art/tree_build.png")
+tree_invalid_img = pygame.image.load("art/tree_invalid.png")
 tree_img.set_colorkey(assets.key)
+tree_build_img.set_colorkey(assets.key)
+tree_invalid_img.set_colorkey(assets.key)
 
 
 class Tree(entity.Entity):
     def __init__(self, x, y, current_map):
         super().__init__(x, y, current_map)
-        self.build_image = tree_img
+        self.build_image = tree_build_img
         self.built_image = tree_img
-        self.invalid_site_image = tree_img
+        self.invalid_site_image = tree_invalid_img
         self.image = pygame.Surface([30, 30])
         self.image = self.built_image
         self.rect = self.image.get_rect()

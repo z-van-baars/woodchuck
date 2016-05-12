@@ -24,6 +24,8 @@ class LumberCamp(entity.Entity):
         self.rect.x = x
         self.rect.y = y
         self.target = None
+        self.health = 1000
+        self.max_health = 1000
         self.wood_cost = 50
         self.name = "Lumber Camp"
 
