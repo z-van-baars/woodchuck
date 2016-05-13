@@ -230,7 +230,6 @@ def debug_unit_selection(event, collisions_in_site):
                 game_globals.build_cursor = None
                 game_globals.maps[game_globals.current_map].units.add(new_unit)
                 game_globals.pos = (new_unit.rect.x, new_unit.rect.y)
-                print(game_globals.pos)
 
     if event.type == pygame.KEYDOWN:
         if event.key == pygame.K_s:
