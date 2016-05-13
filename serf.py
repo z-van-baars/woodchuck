@@ -4,7 +4,7 @@ import entity
 import utilities
 import sounds
 import random
-
+from copy import deepcopy
 
 serf_img = pygame.image.load("art/serf.png")
 serf_build_img = pygame.image.load("art/serf_build.png")
@@ -73,51 +73,63 @@ class Serf(entity.Entity):
             pass
 
     def no_profession(self):
-        if self.target_coords:
+        if self.target_coords is not None:
             changes = utilities.get_vector(self, self.target_coords[0], self.target_coords[1], self.rect.x + 15, self.rect.y + 22)
             self.change_x = changes[0]
             self.change_y = changes[1]
-        if not self.collide_check():
-            self.move(self.current_map)
+            if not self.collide_check():
+                self.move(self.current_map)
 
     def collide_check(self):
+        # hypothetical copy of ourself
         projection = pygame.sprite.Sprite()
         projection.image = self.image
-        projection.rect = self.image.get_rect()
-        projection.rect.x = self.rect.x
-        projection.rect.y = self.rect.y
-        projection.rect.x += self.change_x
-        projection.rect.y += self.change_y
+        projection.rect = deepcopy(self.rect)
 
-        future_collisions = None
-        future_collisions = (pygame.sprite.spritecollide(self, self.current_map.units, False))
-        future_collisions.remove(self)
+        # hypothetically move where we want to go
+        projection.rect.x += self.change_x * 2
+        projection.rect.y += self.change_y * 2 
+
+        # do we have any collisions?
+        future_collisions = []
+        for unit in self.current_map.units:
+            if projection.rect.colliderect(unit.rect):
+                future_collisions.append(unit)
+
+        while self in future_collisions: future_collisions.remove(self)
         if future_collisions:
-            x_distances = []
-            y_distances = []
-            for each in future_collisions:
-                pair = self.remaining_distance(each)
-                x_distances.append(pair[0])
-                y_distances.append(pair[1])
-            self.change_x = utilities.abs_min(x_distances)
-            self.change_y = utilities.abs_min(y_distances)
+            distances_to_collision = map(self.remaining_distance, future_collisions)
+            # type: Iterable[Tuple[int, int]]
+
+            x_changes, y_changes = zip(*distances_to_collision)
+            # type: Iterable[int]
+            # type: Iterable[int]
+
+            self.change_x = utilities.abs_min(x_changes)
+            self.change_y = utilities.abs_min(y_changes)
             return True
         else:
+            # no collisions, good to go!
             return False
 
     def remaining_distance(self, obstacle):
-        if self.change_x > 0:
-            remaining_x = obstacle.rect.left - self.rect.right
-            remaining_x = min(self.change_x, remaining_x)
-        elif self.change_x <= 0:
-            remaining_x = self.rect.left - obstacle.rect.right
-            remaining_x = max(self.change_x, remaining_x)
-        if self.change_y > 0:
-            remaining_y = obstacle.rect.top - self.rect.bottom
-            remaining_y = min(self.change_y, remaining_y)
+        buffer = 2
+        if self.change_x > 0:  # heading to the right
+            leading_edge = self.rect.right + buffer
+            remaining_x = obstacle.rect.left - leading_edge
+
+        elif self.change_x <= 0:  # heading to the left
+            leading_edge = self.rect.left - buffer
+            remaining_x = leading_edge - obstacle.rect.right
+
+        if self.change_y > 0:  # heading down
+            leading_edge = self.rect.bottom + buffer
+            remaining_y = obstacle.rect.top - leading_edge
+
         elif self.change_y <= 0:
-            remaining_y = self.rect.top - obstacle.rect.bottom
-            remaining_y = max(self.change_y, remaining_y)
+            leading_edge = self.rect.top - buffer
+            remaining_y = leading_edge - obstacle.rect.bottom
+
         return (remaining_x, remaining_y)
 
     def do_thing(self, current_map):
